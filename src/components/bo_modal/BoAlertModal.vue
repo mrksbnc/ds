@@ -7,9 +7,7 @@
 		:width-in-px="420"
 		class="bo-alert-modal"
 		@update:show="cancelButtonProps.onCLick"
-		@keydown="
-			KeyboardUtils.registerEnterKeyHandler($event, confirmButtonProps.onCLick)
-		"
+		@keydown="KeyboardUtils.registerEnterKeyHandler($event, confirmButtonProps.onCLick)"
 	>
 		<template #header>
 			<div :class="['flex gap-2', headerAlignment]">
@@ -52,9 +50,7 @@
 					:color="BoTextColor.secondary"
 					:white-space="BoTextWhiteSpace.break_spaces"
 					:text-align="
-						alignment === BoAlertModalAlignment.centered
-							? BoTextAlign.center
-							: BoTextAlign.justify
+						alignment === BoAlertModalAlignment.centered ? BoTextAlign.center : BoTextAlign.justify
 					"
 				/>
 			</div>
@@ -80,11 +76,11 @@
 </template>
 
 <script setup lang="ts">
-import ErrorSvg from '@/assets/svg/error.svg?component'
-import InfoSvg from '@/assets/svg/info.svg?component'
-import SuccessSvg from '@/assets/svg/success.svg?component'
-import WarningSvg from '@/assets/svg/warning.svg?component'
-import { BoButton, BoButtonVariant } from '@/components/bo_button'
+import ErrorSvg from '@/assets/svg/error.svg?component';
+import InfoSvg from '@/assets/svg/info.svg?component';
+import SuccessSvg from '@/assets/svg/success.svg?component';
+import WarningSvg from '@/assets/svg/warning.svg?component';
+import { BoButton, BoButtonVariant } from '@/components/bo_button';
 import {
 	BoFontFamily,
 	BoFontSize,
@@ -93,13 +89,13 @@ import {
 	BoTextAlign,
 	BoTextColor,
 	BoTextWhiteSpace,
-} from '@/components/bo_text'
-import { HtmlButtonType } from '@/global/html_button'
-import { KeyboardUtils } from '@/utils'
-import { computed, toRefs } from 'vue'
-import { BoSlotModal } from '.'
-import { BoAlertModalAlignment, BoAlertModalVariant } from './constants'
-import type { BoAlertModalProps } from './types'
+} from '@/components/bo_text';
+import { HtmlButtonType } from '@/shared/html_button';
+import { KeyboardUtils } from '@/utils';
+import { computed, toRefs } from 'vue';
+import { BoSlotModal } from '.';
+import { BoAlertModalAlignment, BoAlertModalVariant } from './constants';
+import type { BoAlertModalProps } from './types';
 
 const props = withDefaults(defineProps<BoAlertModalProps>(), {
 	title: '',
@@ -125,7 +121,7 @@ const props = withDefaults(defineProps<BoAlertModalProps>(), {
 	alignment: () => BoAlertModalAlignment.default,
 	confirmButtonVariant: () => BoButtonVariant.primary,
 	cancelButtonVariant: () => BoButtonVariant.secondary,
-})
+});
 
 const {
 	title,
@@ -137,15 +133,15 @@ const {
 	confirmButtonProps,
 	variant,
 	alignment,
-} = toRefs(props)
+} = toRefs(props);
 
 const headerAlignment = computed<string>(() => {
 	switch (alignment.value) {
 		case BoAlertModalAlignment.centered:
-			return /*tw*/ 'flex-col items-center'
+			return /*tw*/ 'flex-col items-center';
 		case BoAlertModalAlignment.default:
 		default:
-			return /*tw*/ 'items-center'
+			return /*tw*/ 'items-center';
 	}
-})
+});
 </script>

@@ -1,11 +1,11 @@
 <template>
 	<div
-		:class="defaultContainerClasses"
+		:class="containerClasses.default"
 		class="relative"
 	>
 		<span
-			v-if="label != null"
-			:class="labelContainerClasses"
+			v-if="label"
+			:class="textClasses.label"
 		>
 			<bo-text
 				:text="label"
@@ -14,43 +14,43 @@
 				:font-family="BoFontFamily.sans"
 			/>
 			<bo-text
-				v-if="required"
+				v-if="attributes.required"
 				text="Required *"
 				:size="BoFontSize.xs"
 				:color="BoTextColor.danger"
 				:weight="BoFontWeight.medium"
 			/>
 		</span>
-		<span :class="inputContainer">
+		<span :class="containerClasses.input">
 			<span
-				v-if="prefixIcon != null"
-				:class="defaultPrefixIconContainerClasses"
+				v-if="prefixIcon && prefixIcon != Icon.none"
+				:class="containerClasses.icon.prefix"
 			>
 				<bo-icon
-					:size="iconSize"
 					:icon="prefixIcon"
+					:size="BoSize.default"
 					:color="BoColor.gray_500"
 			/></span>
 			<input
-				v-bind="$attrs"
+				v-bind="attributes"
 				:id="computedInputId"
 				ref="inputRef"
-				:type="type"
 				:value="modelValue"
-				:readonly="readonly"
-				:class="inputClasses"
-				:placeholder="placeholder"
-				:disabled="disabled || isLoading"
+				:class="classConstruct"
+				:type="attributes.type"
+				:readonly="attributes.readonly"
+				:placeholder="attributes.placeholder"
+				:disabled="attributes.disabled || isLoading"
 				@input="onInput"
 			/>
 			<div class="flex flex-row-reverse">
 				<span
-					v-if="suffixIcon != null"
-					:class="defaultSuffixIconContainerClasses"
+					v-if="suffixIcon && suffixIcon != Icon.none && !isLoading"
+					:class="containerClasses.icon.suffix"
 				>
 					<bo-icon
-						:size="iconSize"
 						:icon="suffixIcon"
+						:size="BoSize.default"
 						:color="BoColor.gray_500"
 				/></span>
 				<span
@@ -71,7 +71,7 @@
 			</div>
 		</span>
 		<span
-			v-if="description != null"
+			v-if="description"
 			class="bo-input__description"
 		>
 			<bo-text
@@ -82,8 +82,8 @@
 			/>
 		</span>
 		<span
-			v-if="hasError && errorMessage != null"
-			:class="errorContainerClasses"
+			v-if="hasError && errorMessage"
+			:class="containerClasses.error"
 		>
 			<bo-icon
 				:icon="Icon.alert_triangle"
@@ -101,238 +101,213 @@
 </template>
 
 <script setup lang="ts">
-import { BoIcon, Icon } from '@/components/bo_icon'
-import { BoLoadingPulse } from '@/components/bo_loading_pulse'
-import { BoLoadingSpinner } from '@/components/bo_loading_spinner'
-import {
-	BoFontFamily,
-	BoFontSize,
-	BoFontWeight,
-	BoText,
-	BoTextColor,
-} from '@/components/bo_text'
-import { BoColor } from '@/data'
-import { BoSize } from '@/data/bo_size.constant'
-import { BoLoaderVariant } from '@/data/loader.constant'
-import { HtmlInputType } from '@/global'
-import { TailwindUtils } from '@/utils'
-import { IdentityUtils } from '@/utils/identity_utils'
-import { computed, ref, toRefs, watch } from 'vue'
-import { BoInputSize, BoInputState } from './constants'
-import type { BoInputProps } from './types'
+import { BoIcon, Icon } from '@/components/bo_icon';
+import { BoLoadingPulse } from '@/components/bo_loading_pulse';
+import { BoLoadingSpinner } from '@/components/bo_loading_spinner';
+import { BoFontFamily, BoFontSize, BoFontWeight, BoText, BoTextColor } from '@/components/bo_text';
+import { BoColor } from '@/shared';
+import { BoSize } from '@/shared/bo_size';
+import { BoLoaderVariant } from '@/shared/bo_loader';
+import { StringUtils, TailwindUtils } from '@/utils';
+import { IdentityUtils } from '@/utils/identity_utils';
+import { computed, ref, toRefs, watch } from 'vue';
+import { BoInputSize, BoInputState } from './constants';
+import type { BoInputProps } from './types';
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue']);
 
 const props = withDefaults(defineProps<BoInputProps>(), {
-	placeholder: '',
-	description: '',
-	prefixIcon: null,
-	suffixIcon: null,
+	prefixIcon: Icon.none,
+	suffixIcon: Icon.none,
 	loaderVariant: 'pulse',
-	type: () => HtmlInputType.text,
 	state: () => BoInputState.none,
 	size: () => BoInputSize.default,
-})
+	attributes: () => {
+		return {
+			type: 'text',
+			placeholder: '',
+			disabled: false,
+			required: false,
+			readonly: false,
+		};
+	},
+});
 
 const {
 	id,
 	modelValue,
 	label,
 	description,
-	disabled,
 	isLoading,
 	size,
-	readonly,
-	placeholder,
 	prefixIcon,
 	suffixIcon,
-	required,
 	errorMessage,
 	state,
-	type,
-} = toRefs(props)
+	attributes,
+} = toRefs(props);
 
-const defaultContainerClasses =
-	/*tw*/ 'bo-input flex flex-col gap-1 bg-transparent'
+const containerClasses = {
+	default: /*tw*/ 'bo-input flex flex-col gap-1 bg-transparent',
+	loading:
+		/*tw*/ 'bo-input__loading-container absolute right-[10px] top-1/2 flex -translate-y-1/2 items-center justify-center',
+	error: /*tw*/ 'bo-input__error-container flex items-center gap-1',
+	input: /*tw*/ 'bo-input__container relative flex items-center',
+	icon: {
+		prefix:
+			/*tw*/ 'bo-input__prefix-container absolute left-[10px] top-1/2 flex -translate-y-1/2 items-center justify-center',
+		suffix:
+			/*tw*/ 'bo-input__suffix-container absolute right-[10px] top-1/2 flex -translate-y-1/2 items-center justify-center',
+	},
+};
 
-const defaultInputClasses =
-	/*tw*/ 'bo-input__input rounded-lg border border-gray-300 text-gray-900 text-small bg-white outline-none'
+const focusClasses = {
+	default: /*tw*/ 'focus:ring-blue-600 focus:border-blue-600',
+	error: /*tw*/ 'focus:ring-red-600 focus:border-red-600',
+	valid: /*tw*/ 'focus:ring-green-600 focus:border-green-600',
+};
 
-const defaultInputDisabledClasses =
-	/*tw*/ 'disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:border-gray-300'
+const inputClasses = {
+	default:
+		/*tw*/ 'bo-input__input rounded-lg border border-gray-300 text-gray-900 text-small bg-white outline-none',
+	error: /*tw*/ 'bo-input__input rounded-lg border border-red-600',
+	valid: /*tw*/ 'bo-input__input rounded-lg border border-green-600',
+};
 
-const defaultFocusClasses = /*tw*/ 'focus:ring-blue-600 focus:border-blue-600'
+const stateClasses = {
+	disabled:
+		/*tw*/ 'disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:border-gray-300',
+};
 
-const errorInputClasses =
-	/*tw*/ 'bo-input__input rounded-lg border border-red-600'
+const textClasses = {
+	label: /*tw*/ 'bo-input__label-container flex items-center gap-1',
+};
 
-const errorFocusClasses = /*tw*/ 'focus:ring-red-600 focus:border-red-600 '
-
-const validInputClasses =
-	/*tw*/ 'bo-input__input rounded-lg border border-green-600'
-
-const validFocusClasses = /*tw*/ 'focus:ring-green-600 focus:border-green-600'
-
-const labelContainerClasses =
-	/*tw*/ 'bo-input__label-container flex items-center gap-1'
-
-const defaultPrefixIconContainerClasses =
-	/*tw*/ 'bo-input__prefix-container absolute left-[10px] top-1/2 flex -translate-y-1/2 items-center justify-center'
-
-const defaultSuffixIconContainerClasses =
-	/*tw*/ 'bo-input__suffix-container absolute right-[10px] top-1/2 flex -translate-y-1/2 items-center justify-center'
-
-const defaultLoadingContainerClasses =
-	/*tw*/ 'bo-input__loading-container absolute right-[10px] top-1/2 flex -translate-y-1/2 items-center justify-center'
-
-const inputContainer = /*tw*/ 'bo-input__container relative flex items-center'
-
-const errorContainerClasses =
-	/*tw*/ 'bo-input__error-message flex items-center gap-1'
-
-const inputState = ref<BoInputState>(state.value)
-const inputRef = ref<HTMLInputElement | null>(null)
+const inputState = ref<BoInputState>(state.value);
+const inputRef = ref<HTMLInputElement | null>(null);
 
 const computedInputId = computed<string>(() => {
-	return id.value ?? IdentityUtils.generateRandomIdWithPrefix('bo-input')
-})
+	return id.value ?? IdentityUtils.generateRandomIdWithPrefix('bo-input');
+});
 
 const hasError = computed<boolean>(() => {
-	return errorMessage.value != null
-})
+	return !StringUtils.isEmptyStr(errorMessage.value);
+});
 
 const loadingContainerClasses = computed<string>(() => {
-	return TailwindUtils.merge(
-		isLoading.value
-			? suffixIcon.value != null
-				? 'right-[35px]'
-				: 'right-[14px]'
-			: '',
-		defaultLoadingContainerClasses,
-	)
-})
+	return TailwindUtils.merge('right-[14px]', containerClasses.loading);
+});
 
-const inputSizeClasses = computed<string>(() => {
-	if (prefixIcon.value != null && suffixIcon.value != null) {
+const inputPaddingClasses = computed<string>(() => {
+	const bothIconsSet =
+		prefixIcon.value !== null &&
+		prefixIcon.value !== undefined &&
+		prefixIcon.value !== Icon.none &&
+		suffixIcon.value !== null &&
+		suffixIcon.value !== undefined &&
+		suffixIcon.value !== Icon.none;
+
+	const prefixIconSet = prefixIcon.value && prefixIcon.value !== Icon.none;
+	const suffixIconSet = suffixIcon.value && suffixIcon.value !== Icon.none;
+
+	if (bothIconsSet) {
 		switch (size.value) {
-			case BoInputSize.small:
-				return /*tw*/ 'flex w-full min-h-[24px] text-xs'
 			case BoInputSize.default:
 			default:
-				return /*tw*/ 'flex w-full h-[32px] px-8 text-base'
+				return /*tw*/ 'px-8 py-[9px]';
 			case BoInputSize.large:
-				return /*tw*/ 'flex w-full h-[40px] px-8 text-xl'
+				return /*tw*/ 'px-8 py-3';
 		}
-	}
-
-	if (prefixIcon.value != null) {
+	} else if (prefixIconSet) {
 		switch (size.value) {
-			case BoInputSize.small:
-				return /*tw*/ 'flex w-full h-[24px] pl-6 pr-4 text-xs'
 			case BoInputSize.default:
 			default:
-				return /*tw*/ 'flex w-full h-[32px] pl-8 pr-4 text-sm'
+				return /*tw*/ 'pl-8 pr-4 py-[9px]';
 			case BoInputSize.large:
-				return /*tw*/ 'flex w-full h-[40px] pl-8 pr-4 text-base'
+				return /*tw*/ 'pl-8 pr-4 py-3';
 		}
-	}
-
-	if (suffixIcon.value != null) {
+	} else if (suffixIconSet) {
 		switch (size.value) {
-			case BoInputSize.small:
-				return isLoading.value
-					? /*tw*/ 'flex w-full h-[24px] pl-4 pr-6 text-xs'
-					: /*tw*/ 'flex w-full h-[24px] pl-4 pr-14 text-xs'
 			case BoInputSize.default:
 			default:
-				return isLoading.value
-					? /*tw*/ 'flex w-full h-[32px] pl-4 pr-8 text-sm'
-					: /*tw*/ 'flex w-full h-[32px] pl-4 pr-14 text-sm'
+				return /*tw*/ 'pl-4 pr-8 py-[9px]';
 			case BoInputSize.large:
-				return isLoading.value
-					? /*tw*/ 'flex w-full h-[40px] pl-4 pr-8 text-base'
-					: /*tw*/ 'flex w-full h-[40px] pl-4 pr-14 text-base'
+				return /*tw*/ 'pl-4 pr-8 py-3';
+		}
+	} else {
+		switch (size.value) {
+			case BoInputSize.default:
+			default:
+				return /*tw*/ 'pl-4 pr-4 py-[9px]';
+			case BoInputSize.large:
+				return /*tw*/ 'pl-4 pr-4 py-3';
 		}
 	}
+});
 
+const inputFontSize = computed<string>(() => {
 	switch (size.value) {
-		case BoInputSize.small:
-			return /*tw*/ 'flex w-full h-[24px] px-3 text-xs'
 		case BoInputSize.default:
 		default:
-			return /*tw*/ 'flex w-full h-[32px] px-3 text-sm'
+			return /*tw*/ 'text-sm';
 		case BoInputSize.large:
-			return /*tw*/ 'flex w-full h-[40px] px-3 text-base'
+			return /*tw*/ 'text-base';
 	}
-})
+});
 
-const inputClasses = computed<string>(() => {
-	let disabledClasses = ''
-	let classes = defaultInputClasses
-	let focusClasses = defaultFocusClasses
-
-	if (inputState.value === BoInputState.none) {
-		disabledClasses = defaultInputDisabledClasses
-	}
+const classConstruct = computed<string>(() => {
+	let classes = inputClasses.default;
+	let focus = focusClasses.default;
 
 	if (inputState.value === BoInputState.invalid) {
-		classes = errorInputClasses
-		focusClasses = errorFocusClasses
+		classes = inputClasses.error;
+		focus = focusClasses.error;
 	} else if (state.value === BoInputState.valid) {
-		classes = validInputClasses
-		focusClasses = validFocusClasses
+		classes = inputClasses.valid;
+		focus = focusClasses.valid;
 	}
 
 	return TailwindUtils.merge(
+		'flex w-full',
+		focus,
 		classes,
-		focusClasses,
-		disabledClasses,
-		defaultInputClasses,
-		inputSizeClasses.value,
-	)
-})
-
-const iconSize = computed<BoSize>(() => {
-	switch (size.value) {
-		case BoInputSize.small:
-			return BoSize.small
-		case BoInputSize.default:
-		default:
-			return BoSize.default
-	}
-})
+		inputFontSize.value,
+		stateClasses.disabled,
+		inputPaddingClasses.value,
+	);
+});
 
 function onInput(e: Event): void {
-	const target = e.target as HTMLInputElement
+	const target = e.target as HTMLInputElement;
 
-	if (type.value === HtmlInputType.number) {
-		if (inputRef.value != null) {
-			inputRef.value.value = target.value.replace(/[^\d].+/, '')
+	if (attributes?.value?.type === 'tel' || attributes?.value?.type === 'number') {
+		if (inputRef.value) {
+			inputRef.value.value = target.value.replace(/[^\d].+/, '');
 		}
 	}
 
-	emit('update:modelValue', target.value)
+	emit('update:modelValue', target.value);
 }
 
 watch(
 	() => hasError.value,
 	(val) => {
 		if (val) {
-			state.value = BoInputState.invalid
+			state.value = BoInputState.invalid;
 		} else {
-			state.value = BoInputState.none
+			state.value = BoInputState.none;
 		}
 	},
-)
+);
 
 watch(
-	() => required.value,
+	() => attributes.value?.required,
 	(val) => {
 		if (val) {
-			state.value = BoInputState.invalid
+			state.value = BoInputState.invalid;
 		} else {
-			state.value = BoInputState.none
+			state.value = BoInputState.none;
 		}
 	},
-)
+);
 </script>
